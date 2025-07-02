@@ -1,0 +1,6 @@
+aiogram==3.4.1
+python-dotenv
+sqlalchemy
+asyncpg
+alembic
+loguru
