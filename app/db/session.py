@@ -1,4 +1,3 @@
-# app/db/session.py
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.config import DATABASE_URL
 
