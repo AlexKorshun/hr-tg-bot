@@ -1,23 +1,21 @@
-from aiogram import Router, types, F
+from aiogram import Router, types
 from aiogram.filters import Command
-from sqlalchemy import select
-from app.db.session import SessionLocal
-from app.db.models import User
+from app import pg
 
 router = Router()
 
 @router.message(Command("start"))
 async def start_cmd(message: types.Message):
-    async with SessionLocal() as session:
-        user_id = message.from_user.id
-        username = message.from_user.username
-        full_name = f"{message.from_user.first_name or ''} {message.from_user.last_name or ''}".strip()
+    await pg.init_pool()
+    user = await pg.get_user_by_id(message.from_user.id)
 
-        result = await session.execute(select(User).where(User.telegram_id == user_id))
-        if result.scalar():
-            await message.answer("👋 С возвращением!")
-        else:
-            user = User(telegram_id=user_id, username=username, full_name=full_name)
-            session.add(user)
-            await session.commit()
-            await message.answer("✅ Вы зарегистрированы в системе WW ТЭК!")
+    if user:
+        await message.answer(f"👋 С возвращением, {user['full_name']}!")
+    else:
+        full_name = f"{message.from_user.first_name or ''} {message.from_user.last_name or ''}".strip()
+        await pg.create_user(
+            message.from_user.id,
+            message.from_user.username,
+            full_name
+        )
+        await message.answer("✅ Вы зарегистрированы!")
