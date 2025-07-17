@@ -61,6 +61,17 @@ services:
           export PATH="$(go env GOPATH)/bin:$PATH" &&
           goose -dir /migrations postgres "postgres://postgres:homework@postgresql-master:5432/postgres?sslmode=disable" up
         '
+  hr-bot:
+    build:
+      context: ./
+      dockerfile: dockerfile
+    container_name: hr-bot
+    volumes:
+      - ./.env:/app/.env:ro
+    depends_on:
+      - postgresql-master
+    command: ["python", "-m", "app.main"]
+
 
 
 volumes:
