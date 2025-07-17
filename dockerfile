@@ -14,4 +14,4 @@ WORKDIR /app
 
 COPY --from=builder /build ./
 
-CMD ["python", "-m", "app.main"]
+CMD ["python", "-m", "cmd.main"]

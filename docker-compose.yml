@@ -70,7 +70,7 @@ services:
       - ./.env:/app/.env:ro
     depends_on:
       - postgresql-master
-    command: ["python", "-m", "app.main"]
+    command: ["python", "-m", "cmd.main"]
 
 
 

@@ -1,6 +1,6 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from app import pg
+from app.repository.user import pg
 
 router = Router()
 
