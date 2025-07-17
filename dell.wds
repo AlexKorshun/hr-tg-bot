@@ -1,0 +1,7 @@
+@startuml
+admin -> handler: start 
+handler -> config: check_permission
+handler -> admin: but
+admin -> handler: create_password
+handler -> 
+@enduml
