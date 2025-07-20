@@ -35,38 +35,59 @@ async def create_user(telegram_id: TelegramID, username: str, full_name: str, ro
         async with conn.cursor() as cur:
             await cur.execute(
                 """
-                INSERT INTO users (telegram_id, username, full_name, email, role)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (email) DO NOTHING
+                INSERT INTO users (
+                    telegram_id, username, full_name, email, role
+                )
+                VALUES (
+                    %s, %s, %s, %s, %s
+                )
+                ON CONFLICT (telegram_id) DO NOTHING
                 """,
                 (telegram_id, username, full_name, email, role.value),
             )
 
 
-async def get_pass_hash_by_email(email: str) -> str: # TODO: сделать чтобы чекал на used
-    await init_pool()
-    async with pool.connection() as conn:
-        async with conn.cursor(row_factory=dict_row) as cur:
-            await cur.execute(
-                "SELECT password_hash FROM passwords WHERE email = %s",
-                (email,),
-            )
-            row = await cur.fetchone()
-    return row if row else None 
-
-
-async def create_hash(email, hash: str) -> None:
+async def get_pass_hash_by_email(email: str) -> dict | None:
     await init_pool()
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
-            await  cur.execute(
+            await cur.execute(
                 """
-                INSERT INTO passwords (email, password_hash)
-                VALUES (%s, %s)
-                ON CONFLICT (email) DO NOTHING
+                SELECT password_hash, used
+                FROM passwords
+                WHERE email = %s
+                  AND used = FALSE
+                """,
+                (email,),
+            )
+            row = await cur.fetchone()
+            return row if row else None 
+
+
+async def create_hash(email: str, hash: str) -> None:
+    await init_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                INSERT INTO passwords (email, password_hash, used)
+                VALUES (%s, %s, FALSE)
+                ON CONFLICT (email) DO UPDATE
+                  SET password_hash = EXCLUDED.password_hash,
+                      used = FALSE
                 """,
                 (email, hash),
             )
 
-
-# TODO: сделать чтобы после созлания пользователя вызывалась функция типа update_password которая бы сделала поле used True
+async def set_password_used(email: str) -> None:
+    await init_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                UPDATE passwords
+                   SET used = TRUE
+                 WHERE email = %s
+                """,
+                (email,),
+            )

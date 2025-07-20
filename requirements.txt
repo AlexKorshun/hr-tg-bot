@@ -9,6 +9,7 @@ attrs==25.3.0
 binary==1.0.2
 certifi==2025.6.15
 frozenlist==1.7.0
+golang==0.0.3
 greenlet==3.2.3
 idna==3.10
 importlib_metadata==8.7.0
@@ -29,6 +30,7 @@ SQLAlchemy==2.0.41
 sqlparse==0.5.3
 tabulate==0.9.0
 typing_extensions==4.14.0
+uuid==1.30
 yarl==1.20.1
 yoyo-migrations==9.0.0
 zipp==3.23.0

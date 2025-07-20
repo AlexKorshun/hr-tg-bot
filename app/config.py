@@ -20,7 +20,7 @@ load_config()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
-ROOT_ADMIN_ID = os.getenv("ROOT_ADMIN_ID")
+ROOT_ADMIN_ID = os.getenv("ROOT_ADMIN_ID").split(',')
 
 if not BOT_TOKEN or not DATABASE_URL:
     raise RuntimeError("Required environment variables are missing")
