@@ -10,7 +10,8 @@ kb = ReplyKeyboardMarkup(
                     [KeyboardButton(text="Столовая")],
                     [KeyboardButton(text="Корпоративные мероприятия")],
                     [KeyboardButton(text="Обучающие материалы")],
-                    [KeyboardButton(text="Частозадаваемые вопросы")]
+                    [KeyboardButton(text="Частозадаваемые вопросы")],
+                    [KeyboardButton(text="Оформление документов")]
 
 
                 ],
@@ -27,7 +28,10 @@ kbAdmin = ReplyKeyboardMarkup(
                     [KeyboardButton(text="Виртуальные экскурсии по компании")],
                     [KeyboardButton(text="Организационная структура компании")],
                     [KeyboardButton(text="Столовая")],
-                    [KeyboardButton(text="Корпоративные мероприятия")]
+                    [KeyboardButton(text="Корпоративные мероприятия")],
+                    [KeyboardButton(text="Обучающие материалы")],
+                    [KeyboardButton(text="Частозадаваемые вопросы")],
+                    [KeyboardButton(text="Оформление документов")]
                 ],
                 resize_keyboard=True,
                 one_time_keyboard=False

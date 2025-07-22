@@ -64,6 +64,21 @@ async def get_pass_hash_by_email(email: str) -> dict | None:
             return row if row else None 
 
 
+async def get_pass_role_by_email(email: str) -> Role | None:
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                SELECT role
+                FROM passwords
+                WHERE email = %s
+                """,
+                (email,),
+            )
+            row = await cur.fetchone()
+            return Role(row[0]) if row else None
+
+        
 async def create_hash(email: str, hash: str) -> None:
     await init_pool()
     async with pool.connection() as conn:

@@ -83,8 +83,22 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       - hr-bot
+  
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-storage:/var/lib/grafana
+  
 
 
 volumes:
   postgresql_master_data:
   postgresql_slave_data:
+  grafana-storage: {}
+

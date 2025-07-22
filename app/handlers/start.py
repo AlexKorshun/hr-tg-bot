@@ -144,11 +144,12 @@ async def handle_password_user_input(message: types.Message, state: FSMContext):
         )
         username = message.from_user.username or ""
 
+        role = await get_pass_role_by_email(email)
         await create_user(
                 user_id,
                 username,
                 full_name,
-                role=Role.CANDIDATE,
+                role=Role(role),
                 email=email
             )
         metrics.users_registered_total.inc()

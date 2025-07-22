@@ -31,11 +31,11 @@ async def main():
     bot.user_state_cache = cache
 
     dp = Dispatcher()
-    dp.include_router(file_manager.router)
     dp.include_router(handler.router)
+    dp.include_router(file_manager.router)
 
     await dp.start_polling(bot)
 
+
 if __name__ == "__main__":
-    print("АХУЕТЬ, РАБОТАЕТ WW")
     asyncio.run(main())

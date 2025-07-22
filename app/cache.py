@@ -10,11 +10,13 @@ class UserState:
         self,
         pending_action: str,
         role: object,
-        messages: Optional[List[types.Message]] = None
+        messages: Optional[List[types.Message]] = None,
+        data: Optional[dict] = None
     ):
         self.pending_action = pending_action
         self.role = role
         self.messages = messages or []
+        self.data = data or {}
 
 class UserStateCache:
     def __init__(self, bot: Bot, ttl: timedelta, cleanup_interval: timedelta):
@@ -87,14 +89,33 @@ class UserStateCache:
                         f" для пользователя {user_id}"
                     )
 
+    # async def add_message(self, user_id: int, msg: types.Message):
+    #     async with self._lock:
+    #         state = self._data.get(user_id)
+    #         if not state:
+    #             state = UserState(pending_action="", role=None, messages=[])
+    #         state.messages.append(msg)
+    #         self._data[user_id] = state
+    #         self._expiration[user_id] = datetime.utcnow() + self.ttl
+
     async def add_message(self, user_id: int, msg: types.Message):
         async with self._lock:
             state = self._data.get(user_id)
             if not state:
-                state = UserState(pending_action="", role=None, messages=[])
+                state = UserState(pending_action="", role=None, messages=[]) # <-- Здесь тоже создается новый стейт
             state.messages.append(msg)
             self._data[user_id] = state
             self._expiration[user_id] = datetime.utcnow() + self.ttl
+
+    # async def update_action(self, user_id: int, action: str):
+    #     async with self._lock:
+    #         state = self._data.get(user_id)
+    #         if not state:
+    #             state = UserState(pending_action=action, role=None, messages=[])
+    #         else:
+    #             state.pending_action = action
+    #         self._data[user_id] = state
+    #         self._expiration[user_id] = datetime.utcnow() + self.ttl
 
     async def update_action(self, user_id: int, action: str):
         async with self._lock:

@@ -1,10 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE users ( -- TODO: сделать табличку
-)
+ALTER TABLE passwords
+ADD COLUMN role role_enum DEFAULT 'candidate';
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE users;
+ALTER TABLE passwords
+DROP COLUMN role;
 -- +goose StatementEnd

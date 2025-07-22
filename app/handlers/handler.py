@@ -8,6 +8,7 @@ from aiogram.types import (
     ReplyKeyboardRemove
 )
 from app.handlers.FAQ import show_question_info
+from app.handlers.paperwork import show_paperwork_info
 from app.handlers.canteen import show_canteen_info
 from app.handlers.corporate_events import show_events_info
 from app.handlers.education import show_education_info
@@ -45,9 +46,9 @@ async def handle_category_request(message: types.Message, user_function, categor
     
     if isadmin(user_id):
         builder = InlineKeyboardBuilder()
-        callback_data_upload = AdminActionCallback(action="upload", category_name=category_name, category_title=category_title)
-        callback_data_view = AdminActionCallback(action="view", category_name=category_name, category_title=category_title)
-        callback_data_delete = AdminActionCallback(action="delete", category_name=category_name, category_title=category_title)
+        callback_data_upload = AdminActionCallback(action="upload", category_name=category_name)
+        callback_data_view = AdminActionCallback(action="view", category_name=category_name)
+        callback_data_delete = AdminActionCallback(action="delete", category_name=category_name)
         
         builder.button(text="📥 Загрузить файл", callback_data=callback_data_upload)
         builder.button(text="📄 Посмотреть файлы", callback_data=callback_data_view)
@@ -55,7 +56,7 @@ async def handle_category_request(message: types.Message, user_function, categor
         builder.adjust(1)
 
         sent_message = await message.answer(
-            f"<b>Режим администратора: {category_title}</b>\n\nВыберите действие:",
+            f"Выберите действие:",
             reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
@@ -64,38 +65,6 @@ async def handle_category_request(message: types.Message, user_function, categor
     else:
         builder = await show_files(category_name, message)
         await user_function(message, builder)
-
-@router.callback_query(AdminActionCallback.filter())
-async def handle_admin_action(callback: types.CallbackQuery, callback_data: AdminActionCallback):
-    metrics.requests_total.labels(endpoint='[callback]').inc()
-    action = callback_data.action
-    category_name = callback_data.category_name
-    category_title = callback_data.category_title 
-    cache = callback.bot.user_state_cache
-    user_id = callback.from_user.id
-
-    if action == "upload":
-        action_with_data = f"waiting_for_file_upload:{category_name}"
-        await cache.update_action(user_id, action_with_data)
-        
-        await callback.message.edit_text(
-            "Теперь отправьте файл для загрузки.",
-            parse_mode="HTML"
-        )
-        await callback.answer()
-
-    elif action == "view":
-        builder = await show_files(category_name)
-        if builder:
-            await callback.message.edit_text(
-                f"<b>Режим администратора: {callback.message.text.splitlines()[0].split(': ')[1]}</b>\n\n"
-                "Нажмите на имя файла, чтобы скачать. Нажмите на '❌', чтобы удалить.",
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-        else:
-            await callback.message.edit_text("В этой категории пока нет файлов.")
-        await callback.answer()
 
 @router.message(Command("start"))
 async def handle_start(message: types.Message, state: FSMContext):
@@ -147,7 +116,7 @@ async def handle_show_excursions_info(message: types.Message, state: FSMContext)
     await handle_category_request(
         message,
         user_function=show_excursions_info,
-        category_name="ekskursii",
+        category_name="face-to-face",
         category_title=message.text
     )
 
@@ -226,7 +195,19 @@ async def handle_show_question_info(message: types.Message, state: FSMContext):
     await cache.add_message(user_id, message)
     await show_question_info(message, state)
 
-    
+
+@router.message(F.text == "Оформление документов")
+async def handle_show_paperwork_info(message: types.Message, state: FSMContext):
+    metrics.requests_total.labels(endpoint='Оформление документов').inc()
+    cache = message.bot.user_state_cache
+    user_id = message.from_user.id
+
+    await handle_category_request(
+        message,
+        user_function=show_paperwork_info,
+        category_name="paperwork",
+        category_title=message.text
+    )
 
 
 
