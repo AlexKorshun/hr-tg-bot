@@ -2,11 +2,12 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+'''
 from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardRemove
-)
+)'''
 from app.uuid.uuid import new_uuid
 from app.hash.hash import hash_string, verify_string
 
@@ -15,6 +16,9 @@ from app.models.user import TelegramID, Role
 from app.config import ROOT_ADMIN_ID
 from app.cache import *
 
+from app.handlers.keyboard import kb, kbAdmin
+
+import app.metrics.metrics as metrics
 
 async def start_cmd(message: types.Message, state: FSMContext):
     cache = message.bot.user_state_cache
@@ -27,16 +31,9 @@ async def start_cmd(message: types.Message, state: FSMContext):
 
     if user:
         if str(message.from_user.id) in ROOT_ADMIN_ID:
-            kb = ReplyKeyboardMarkup(
-                keyboard=[
-                    [KeyboardButton(text="Добавить пользователя")],
-                    [KeyboardButton(text="Отменить")]
-                ],
-                resize_keyboard=True
-            )
-            await message.answer(f"👋 С возвращением, {user.full_name}!", reply_markup=kb)
+            await message.answer(f"👋 С возвращением, {user.full_name}!", reply_markup=kbAdmin)
         else:
-            await message.answer(f"👋 С возвращением, {user.full_name}!")
+            await message.answer(f"👋 С возвращением, {user.full_name}!", reply_markup=kb)
     else:
         full_name = " ".join(
             filter(None, (message.from_user.first_name, message.from_user.last_name))
@@ -51,6 +48,8 @@ async def start_cmd(message: types.Message, state: FSMContext):
                 role=Role.ADMIN,
                 email=""
             )
+            metrics.users_registered_total.inc()
+
             await message.answer("🛡️ Администратор зарегистрирован!", reply_markup=kb)
         else:
             await message.answer("Введите свою почту")
@@ -152,18 +151,12 @@ async def handle_password_user_input(message: types.Message, state: FSMContext):
                 role=Role.CANDIDATE,
                 email=email
             )
+        metrics.users_registered_total.inc()
         sent = await message.answer("✅ Успешно зарегистрированы.")
         await cache.add_message(user_id, sent)
         await set_password_used(email)
 
-        kb = ReplyKeyboardMarkup(
-                keyboard=[
-                    [KeyboardButton(text="Информация о компании")],
-                    [KeyboardButton(text="Отменить")],
-                    [KeyboardButton(text="ekskursii")]
-                ],
-                resize_keyboard=True
-            )
+        
 
         await message.answer(
 '''👋 Добро пожаловать в корпоративный чат-бот!

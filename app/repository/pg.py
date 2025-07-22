@@ -91,3 +91,37 @@ async def set_password_used(email: str) -> None:
                 """,
                 (email,),
             )
+async def get_users_count() -> int:
+    await init_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT COUNT(*) FROM users")
+            count = await cur.fetchone()
+            return count[0] if count else 0
+
+async def update_user_last_use(telegram_id: TelegramID) -> None:
+    await init_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                UPDATE users
+                   SET last_use = CURRENT_TIMESTAMP
+                 WHERE telegram_id = %s
+                """,
+                (telegram_id,),
+            )
+
+async def get_active_users_count() -> int:
+    await init_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                SELECT count(*)
+                FROM users
+                WHERE last_use >= CURRENT_TIMESTAMP - INTERVAL '7 day'
+                """
+            )
+            count = await cur.fetchone()
+            return count[0] if count else 0

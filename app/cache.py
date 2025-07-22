@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, List
 from aiogram import Bot, Dispatcher, types
+from app.repository.pg import update_user_last_use
 
 class UserState:
     def __init__(
@@ -54,6 +55,7 @@ class UserStateCache:
                                 f"Не удалось удалить сообщение {msg.message_id}"
                                 f" для пользователя {user_id}"
                             )
+                await update_user_last_use(user_id)
                 self._data.pop(user_id, None)
                 self._expiration.pop(user_id, None)
 

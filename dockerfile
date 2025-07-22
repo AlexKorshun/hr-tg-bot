@@ -1,4 +1,4 @@
-FROM python:3.11-alpine AS builder
+FROM python:3.11 AS builder
 
 WORKDIR /build
 
@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY . .
 
-FROM python:3.11-alpine AS runtime
+FROM python:3.11 AS runtime
 
 WORKDIR /app
 

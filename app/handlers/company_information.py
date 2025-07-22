@@ -18,7 +18,7 @@ from app.cache import UserState
 from app.handlers.start import *
 
 
-async def company_information(message: types.Message, state: FSMContext):
+async def company_information(message: types.Message, builder):
     cache = message.bot.user_state_cache
     user_id = message.from_user.id
 
@@ -74,7 +74,8 @@ async def company_information(message: types.Message, state: FSMContext):
 Email: info@tek.tomsk.ru
 Телефон: +7 (3822) 99-00-00
 Сайт: tek.tomsk.ru
-'''
+''',
+        reply_markup=builder.as_markup()
 )
     await cache.add_message(user_id, sent)
 
