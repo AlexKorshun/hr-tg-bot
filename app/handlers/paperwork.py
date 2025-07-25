@@ -22,11 +22,12 @@ async def show_paperwork_info(message: types.Message, builder):
     cache = message.bot.user_state_cache
     user_id = message.from_user.id
 
+    fulltext = ""
+    with open("files/paperwork/title.txt", "r", encoding="utf-8") as title_file:
+        fulltext = [line for line in title_file]
     sent = await message.answer(
 
-'''
-Снизу вы можете ознакомиться с прядком заполнеиня следующих документов:
-''',
+    ''.join(fulltext),
         reply_markup=builder.as_markup()
 )
     await cache.add_message(user_id, sent)

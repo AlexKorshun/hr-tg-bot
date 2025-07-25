@@ -23,25 +23,13 @@ async def show_virtual_excursions(message: types.Message, builder):
     cache = message.bot.user_state_cache
     user_id = message.from_user.id
 
+    fulltext = ""
+    with open("files/virt/title.txt", "r", encoding="utf-8") as title_file:
+        fulltext = [line for line in title_file]
+
     sent = await message.answer(
 
-'''
-🌏 Виртуальные экскурсии
-
-Познакомьтесь с нашим предприятием в интерактивном формате!
-
-Что вы найдёте в разделе:
-
-    📽️ Видео-туры по производственным цехам
-
-    🏢 Панорамы офисных помещений
-
-    🎯 Экскурсии по важным объектам компании
-
-    🎧 Аудиогиды с интересными фактами
-
-👇 Нажмите кнопку ниже, чтобы скачать необходимый материал
-''',
+    ''.join(fulltext),
         reply_markup=builder.as_markup()
 )
     await cache.add_message(user_id, sent)

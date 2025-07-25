@@ -20,7 +20,7 @@ requests_total = Counter(
 
 active_users_percentage = Gauge(
     'active_users_percentage',
-    'Percentage of users who are active (last_use - created_at <= 7 days)'
+    'Percentage of users who are active (last used less than 7 days ago)'
 )
 
 def update_total_users():

@@ -18,14 +18,13 @@ from app.cache import UserState
 from app.handlers.start import *
 
 
-async def show_events_info(message: types.Message, builder):
+async def show_help_info(message: types.Message, builder):
     cache = message.bot.user_state_cache
     user_id = message.from_user.id
 
     fulltext = ""
-    with open("files/canteen/title.txt", "r", encoding="utf-8") as title_file:
+    with open("files/help/title.txt", "r", encoding="utf-8") as title_file:
         fulltext = [line for line in title_file]
-
     sent = await message.answer(
 
     ''.join(fulltext),

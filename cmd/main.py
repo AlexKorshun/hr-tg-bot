@@ -5,6 +5,7 @@ from app.config import BOT_TOKEN
 
 from app.handlers import handler
 from app.handlers import file_manager
+from app.handlers import face_to_face_excursions
 
 from app.cache import UserStateCache
 from datetime import timedelta
@@ -33,6 +34,7 @@ async def main():
     dp = Dispatcher()
     dp.include_router(handler.router)
     dp.include_router(file_manager.router)
+    dp.include_router(face_to_face_excursions.router)
 
     await dp.start_polling(bot)
 

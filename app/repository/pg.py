@@ -1,4 +1,4 @@
-import asyncpg
+import asyncpg, datetime
 from psycopg_pool import AsyncConnectionPool
 from psycopg.rows import dict_row
 from typing import Optional, List
@@ -140,3 +140,51 @@ async def get_active_users_count() -> int:
             )
             count = await cur.fetchone()
             return count[0] if count else 0
+        
+
+async def get_excursions_count() -> int:
+    await init_pool()  # Инициализация пула соединений (если требуется)
+    
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT COUNT(*) FROM excursions;"
+            )
+            count = await cur.fetchone()
+            return count[0] if count else 0
+        
+async def get_excursion_by_index(index: int) -> tuple[str, str, str] | None:
+    await init_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                SELECT id ,date, description 
+                FROM excursions
+                ORDER BY id  -- или другой подходящий столбец для сортировки
+                OFFSET %s
+                LIMIT 1;
+                """,
+                (index,)  # Параметр для OFFSET
+            )
+            result = await cur.fetchone()
+            return result if result else None
+
+import datetime
+
+async def register_excursion(excursion_id: int, user_telegram_id: int) -> int:
+    await init_pool()
+    
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            current_time = datetime.datetime.now()
+            
+            await cur.execute(
+                "INSERT INTO excursion_registrations (excursion_id, user_telegram_id, created_at) "
+                "VALUES (%s, %s, %s) "
+                "ON CONFLICT (excursion_id, user_telegram_id) DO NOTHING RETURNING id",
+                (excursion_id, user_telegram_id, current_time)
+            )
+            
+            result = await cur.fetchone()
+            return result[0] if result else None

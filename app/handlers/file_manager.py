@@ -5,13 +5,13 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 
 import os
-import shutil 
+import shutil
+import base64
 from app.config import ROOT_ADMIN_ID
 from app.cache import UserStateCache, UserState
 
 router = Router()
 
-# CallbackData остается без изменений, мы просто добавим новые 'action'
 class BrowserCallback(CallbackData, prefix="browse"):
     action: str
     index: int
@@ -20,11 +20,30 @@ class AdminActionCallback(CallbackData, prefix="admin_action"):
     action: str
     category_name: str
 
-# Старые функции удаления больше не нужны, удаляем их.
-# async def show_files_for_deletion(...) - УДАЛЕНО
-# async def delete_file_by_index_callback(...) - УДАЛЕНО
+class SearchFileCallback(CallbackData, prefix="search_file"):
+    index: int
 
-# Ваша функция загрузки файлов. Я убрал ее дубликат.
+def isadmin(user_id):
+    if str(user_id) in ROOT_ADMIN_ID:
+        return True
+    return False
+
+async def perform_search(root_path: str, query: str, user_id:str) -> list[str]:
+    found_files = []
+    query_lower = query.lower()
+    
+    if not os.path.exists(root_path):
+        return []
+
+    for dirpath, _, filenames in os.walk(root_path):
+        for filename in filenames:
+            if not isadmin(user_id) and filename.lower() == 'title.txt':
+                continue 
+            if query_lower in filename.lower():
+                full_path = os.path.join(dirpath, filename)
+                found_files.append(full_path)
+    return found_files
+
 async def process_admin_file_upload(message: types.Message):
     cache = message.bot.user_state_cache
     user_id = message.from_user.id
@@ -49,14 +68,13 @@ async def process_admin_file_upload(message: types.Message):
         file_name = message.document.file_name
     elif message.photo:
         file_id = message.photo[-1].file_id
-        file_name = f"photo_{message.photo[-1].unique_id}.jpg"
+        file_name = f"photo_{message.photo[-1].file_unique_id}.jpg"
     elif message.video:
         file_id = message.video.file_id
-        file_name = message.video.file_name or f"video_{message.video.unique_id}.mp4"
+        file_name = message.video.file_name or f"video_{message.video.file_unique_id}.mp4"
     
     if not file_id: return
     
-    # Загрузка в подпапку
     dest_folder = os.path.join("files", category_name)
     if user_state.data and 'current_path' in user_state.data:
         dest_folder = user_state.data['current_path']
@@ -71,29 +89,25 @@ async def process_admin_file_upload(message: types.Message):
     except Exception as e:
         await message.answer(f"❌ Ошибка при сохранении файла: {e}")
     finally:
-        # Сбрасываем pending_action, чтобы можно было снова пользоваться меню
         user_state.pending_action = "browsing_files"
         await cache.set(user_id, user_state)
 
-
-# --- МОДИФИЦИРОВАННАЯ КЛЮЧЕВАЯ ФУНКЦИЯ ---
-async def create_browser_keyboard_and_update_state(
-    user_id: int,
-    cache: UserStateCache,
-    current_path: str,
-    root_path: str
-) -> InlineKeyboardBuilder | None:
+async def create_browser_keyboard_and_update_state(user_id: int, cache: UserStateCache, current_path: str, root_path: str) -> InlineKeyboardBuilder | None:
     if not os.path.exists(current_path) or not os.path.isdir(current_path):
         return None
 
     builder = InlineKeyboardBuilder()
 
-    # 1. Получаем списки папок и файлов
     dirs = sorted([d for d in os.listdir(current_path) if os.path.isdir(os.path.join(current_path, d))])
     files = sorted([f for f in os.listdir(current_path) if os.path.isfile(os.path.join(current_path, f))])
+
+    if not isadmin(user_id):
+        files = [f for f in files if f.lower() != 'title.txt']
+    else:
+        files = files
+
     items_on_screen = dirs + files
 
-    # 2. Обновляем состояние в кэше
     user_state, _ = await cache.get(user_id)
     if not user_state:
         user_state = UserState(pending_action="browsing_files", role=None, data={})
@@ -101,22 +115,17 @@ async def create_browser_keyboard_and_update_state(
     user_state.data['current_path'] = current_path
     user_state.data['root_path'] = root_path
     user_state.data['items'] = items_on_screen
-    # Получаем режим, по умолчанию 'view'
     mode = user_state.data.get('mode', 'view')
     await cache.set(user_id, user_state)
 
-    # 3. Создаем кнопки в зависимости от режима
     if mode == 'delete':
-        # --- Клавиатура для режима удаления ---
         builder.button(text="↩️ Завершить удаление", callback_data=BrowserCallback(action="cancel_delete", index=-1).pack())
         for i, item_name in enumerate(items_on_screen):
             icon = "📁" if i < len(dirs) else "📄"
-            # Две кнопки в строке: имя и кнопка удаления
             builder.button(text=f"{icon} {item_name}", callback_data=BrowserCallback(action="info", index=i).pack())
             builder.button(text="❌ Удалить", callback_data=BrowserCallback(action="delete", index=i).pack())
-        builder.adjust(1, 2) # Кнопка отмены - одна, остальные по две
+        builder.adjust(1, 2)
     else:
-        # --- Клавиатура для обычного режима просмотра ---
         if current_path != root_path:
             builder.button(text="⬅️ Назад", callback_data=BrowserCallback(action="back", index=-1).pack())
 
@@ -131,8 +140,6 @@ async def create_browser_keyboard_and_update_state(
     has_buttons = any(True for _ in builder.buttons)
     return builder if has_buttons else None
 
-
-# --- ОБНОВЛЕННЫЙ ОБРАБОТЧИК АДМИНСКИХ ДЕЙСТВИЙ ---
 @router.callback_query(AdminActionCallback.filter())
 async def handle_admin_action(callback: types.CallbackQuery, callback_data: AdminActionCallback):
     action = callback_data.action
@@ -166,7 +173,6 @@ async def handle_admin_action(callback: types.CallbackQuery, callback_data: Admi
         await callback.message.edit_text(f"Отправьте файл для загрузки в папку <code>{folder_name}</code>.", parse_mode="HTML")
 
     elif action == "delete":
-        # Активируем режим удаления
         user_state, _ = await cache.get(user_id)
         if not user_state:
              user_state = UserState(pending_action="browsing_files", role=None, data={})
@@ -181,7 +187,6 @@ async def handle_admin_action(callback: types.CallbackQuery, callback_data: Admi
 
     await callback.answer()
 
-# --- ОБНОВЛЕННЫЙ ОБРАБОТЧИК НАВИГАЦИИ ---
 @router.callback_query(BrowserCallback.filter())
 async def handle_browser_navigation(callback: types.CallbackQuery, callback_data: BrowserCallback, bot: Bot):
     cache = callback.bot.user_state_cache
@@ -200,14 +205,13 @@ async def handle_browser_navigation(callback: types.CallbackQuery, callback_data
     items_on_screen = user_state.data.get('items', [])
 
     path_to_open = ""
-    if action not in ['back', 'cancel_delete', 'info']:
+    if action not in ['back', 'cancel_delete']:
         if not (0 <= index < len(items_on_screen)):
             await callback.answer("Ошибка: неверный выбор.", show_alert=True)
             return
         item_name = items_on_screen[index]
         path_to_open = os.path.join(current_path, item_name)
 
-    # --- Новые и обновленные действия ---
     if action == "delete":
         try:
             if os.path.isfile(path_to_open):
@@ -219,7 +223,6 @@ async def handle_browser_navigation(callback: types.CallbackQuery, callback_data
             else:
                 await callback.answer("Объект уже удален.", show_alert=True)
             
-            # Обновляем клавиатуру после удаления
             builder = await create_browser_keyboard_and_update_state(user_id, cache, current_path, root_path)
             if builder:
                 await callback.message.edit_reply_markup(reply_markup=builder.as_markup())
@@ -239,10 +242,17 @@ async def handle_browser_navigation(callback: types.CallbackQuery, callback_data
         return
     
     elif action == "info":
-        await callback.answer("Нажмите '❌ Удалить' для удаления.")
-        return
+        if not os.path.isdir(path_to_open):
+            await callback.answer("Ошибка: папка не найдена.", show_alert=True)
+            return
+        
+        builder = await create_browser_keyboard_and_update_state(user_id, cache, path_to_open, root_path)
+        if builder:
+            await callback.message.edit_reply_markup(reply_markup=builder.as_markup())
+        else:
+            await callback.message.edit_text(f"Папка <code>{os.path.basename(path_to_open)}</code> пуста.")
+        await callback.answer()
 
-    # --- Старые действия ---
     if action == "back":
         path_to_open = os.path.dirname(current_path)
     
@@ -266,8 +276,47 @@ async def handle_browser_navigation(callback: types.CallbackQuery, callback_data
             await callback.message.edit_text(f"Папка <code>{os.path.basename(path_to_open)}</code> пуста.")
         await callback.answer()
 
-# Адаптированная функция для ОБЫЧНЫХ пользователей (не админов)
-# Она не дает навигации по папкам, только показывает файлы в корне категории
+@router.callback_query(SearchFileCallback.filter())
+async def handle_send_searched_file(callback: types.CallbackQuery, callback_data: SearchFileCallback, bot: Bot):
+    cache = callback.bot.user_state_cache
+    user_id = callback.from_user.id
+    
+    try:
+        user_state, exist = await cache.get(user_id)
+        if not exist or 'search_results' not in user_state.data:
+            await callback.answer("Сессия поиска истекла. Пожалуйста, выполните поиск заново.", show_alert=True)
+            await callback.message.delete()
+            return
+
+        search_results = user_state.data['search_results']
+        file_index = callback_data.index
+
+        if not (0 <= file_index < len(search_results)):
+            await callback.answer("Ошибка: неверный файл. Пожалуйста, выполните поиск заново.", show_alert=True)
+            return
+
+        file_path = search_results[file_index]
+
+        base_dir = os.path.abspath("files")
+        resolved_path = os.path.abspath(file_path)
+
+        if not resolved_path.startswith(base_dir):
+            await callback.answer("Ошибка: доступ запрещен.", show_alert=True)
+            return
+
+        if not os.path.isfile(resolved_path):
+            await callback.answer("Файл не найден. Возможно, он был перемещен или удален.", show_alert=True)
+            return
+            
+        await bot.send_document(
+            chat_id=callback.from_user.id,
+            document=FSInputFile(resolved_path)
+        )
+        await callback.answer()
+
+    except Exception as e:
+        await callback.answer("Произошла неизвестная ошибка при отправке файла.", show_alert=True)
+
 async def show_files(category_name: str, message: types.Message) -> InlineKeyboardBuilder | None:
     folder_path = os.path.join("files", category_name)
     cache = message.bot.user_state_cache
@@ -278,7 +327,6 @@ async def show_files(category_name: str, message: types.Message) -> InlineKeyboa
         await cache.add_message(user_id, sent)
         return None
 
-    # Для обычных пользователей просто создаем клавиатуру с файлами
     builder = await create_browser_keyboard_and_update_state(
         user_id, cache, folder_path, folder_path
     )

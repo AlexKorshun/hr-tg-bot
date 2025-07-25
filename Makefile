@@ -45,3 +45,7 @@ migrate-down: $(GOOSE)
 .PHONY: requirements
 requirements:
 	pip freeze -> requirements.txt
+
+.PHONY: install-requirements
+install-requirements:
+	pip install -r requirements.txt
