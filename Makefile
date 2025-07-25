@@ -41,3 +41,11 @@ migrate-down: $(GOOSE)
 		set -a; . $(ENV_LOCAL_FILE); set +a; \
 	fi; \
 	$(GOOSE) -dir ./migrations postgres "$$WRITE_DSN" down
+
+.PHONY: requirements
+requirements:
+	pip freeze -> requirements.txt
+
+.PHONY: install-requirements
+install-requirements:
+	pip install -r requirements.txt
