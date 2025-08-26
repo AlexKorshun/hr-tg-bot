@@ -189,4 +189,3 @@ async def register_excursion(excursion_id: int, user_telegram_id: int) -> int:
             result = await cur.fetchone()
             return result[0] if result else None
 
-

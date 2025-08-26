@@ -9,7 +9,9 @@ from aiogram.types import (
     ReplyKeyboardRemove,
     InlineKeyboardButton
 )
+
 from app.handlers.file_manager import AdminActionCallback, isadmin
+
 from app.uuid.uuid import new_uuid
 from app.hash.hash import hash_string, verify_string
 
@@ -48,6 +50,7 @@ async def handle_callback(callback_query: types.CallbackQuery):
 
     cache = callback_query.message.bot.user_state_cache
     user_id = callback_query.message.from_user.id
+
     total = await get_excursions_count()
 
     builder = InlineKeyboardBuilder()
@@ -62,10 +65,12 @@ async def handle_callback(callback_query: types.CallbackQuery):
         builder.button(text=f"дата: {date} время: {time} Описание: {description} ", callback_data=f"excursion_{excursionID}")
 
     builder.adjust(1)
+
     sent = await callback_query.message.answer("⬇️ Выберите экскурсию:", reply_markup=builder.as_markup())
     await cache.add_message(user_id, sent)
     await callback_query.answer()  # Подтверждаем получение запроса
   
+
 
     
 @router.callback_query(F.data.startswith('excursion_'))

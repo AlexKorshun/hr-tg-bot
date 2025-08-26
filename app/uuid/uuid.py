@@ -2,7 +2,8 @@ import random
 
 def new_uuid() -> str:
     def random_hex(n):
-        return ''.join(random.choices('АӘБВГҒДЕЁЖЗИЙКҚЛМНҢОӨПРСТУҰҮФХҺЦЧШЩЪЫІЬЭЮЯ', k=n))
+
+        return ''.join(random.choices('ЦУКЕНГШЩЗФЫВАПРОЛДЯЧСМИТЬЪйцукенгшщзфывапролдячсмитьъ', k=n))
 
     parts = [
         random_hex(8),
