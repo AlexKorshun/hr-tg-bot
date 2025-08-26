@@ -41,46 +41,6 @@ def isadmin(user_id):
         return True
     return False
 
-async def handle_category_request(message: types.Message, user_function, category_name: str, category_title: str):
-    cache = message.bot.user_state_cache
-    user_id = message.from_user.id
-
-    await cache.delete(user_id)
-    await cache.add_message(user_id, message)
-    
-    if isadmin(user_id):
-        builder = InlineKeyboardBuilder()
-        callback_data_upload = AdminActionCallback(action="upload", category_name=category_name)
-        callback_data_view = AdminActionCallback(action="view", category_name=category_name)
-        callback_data_delete = AdminActionCallback(action="delete", category_name=category_name)
-        
-        builder.button(text="📥 Загрузить файл", callback_data=callback_data_upload)
-        builder.button(text="📄 Посмотреть файлы", callback_data=callback_data_view)
-        builder.button(text="🗑️ Удалить файлы", callback_data=callback_data_delete)
-        builder.adjust(1)
-
-        sent_message = await message.answer(
-            f"Выберите действие:",
-            reply_markup=builder.as_markup(),
-            parse_mode="HTML"
-        )
-        await cache.add_message(user_id, sent_message)
-
-    else:
-        builder = await show_files(category_name, message)
-        search_command_text = f"/search {category_name} "
-        
-        builder.row(InlineKeyboardButton(text=" Поиск по этой категории", switch_inline_query_current_chat=search_command_text))
-
-        # builder.button(
-        #     text="🔎 Поиск по этой категории",
-        #     switch_inline_query_current_chat=search_command_text
-        # )
-
-        files_builder = await show_files(category_name, message)
-        
-        await user_function(message, builder)
-
 
 @router.message(F.text.startswith("@"))
 async def handle_inline_chat_search(message: types.Message):
@@ -328,6 +288,51 @@ async def handle_show_help_info(message: types.Message, state: FSMContext):
         category_title=message.text
     )
 
+
+#############
+
+async def handle_category_request(message: types.Message, user_function, category_name: str, category_title: str):
+    cache = message.bot.user_state_cache
+    user_id = message.from_user.id
+
+    await cache.delete(user_id)
+    await cache.add_message(user_id, message)
+    
+    if isadmin(user_id):
+        builder = InlineKeyboardBuilder()
+        callback_data_upload = AdminActionCallback(action="upload", category_name=category_name)
+        callback_data_view = AdminActionCallback(action="view", category_name=category_name)
+        callback_data_delete = AdminActionCallback(action="delete", category_name=category_name)
+        
+        builder.button(text="📥 Загрузить файл", callback_data=callback_data_upload)
+        builder.button(text="📄 Посмотреть файлы", callback_data=callback_data_view)
+        builder.button(text="🗑️ Удалить файлы", callback_data=callback_data_delete)
+        builder.adjust(1)
+
+        # sent_message = await message.answer(
+        #     f"Выберите действие:",
+        #     reply_markup=builder.as_markup(),
+        #     parse_mode="HTML"
+        # )
+        # await cache.add_message(user_id, sent_message)
+
+
+    else:
+        builder = await show_files(category_name, message)
+        search_command_text = f"/search {category_name} "
+        
+        builder.row(InlineKeyboardButton(text=" Поиск по этой категории", switch_inline_query_current_chat=search_command_text))
+
+        # builder.button(
+        #     text="🔎 Поиск по этой категории",
+        #     switch_inline_query_current_chat=search_command_text
+        # )
+
+        files_builder = await show_files(category_name, message)
+        
+    await user_function(message, builder)
+
+################
 
 
 @router.message(F.content_type.in_({'document', 'photo', 'video'}))
