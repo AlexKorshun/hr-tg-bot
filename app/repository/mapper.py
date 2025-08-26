@@ -1,9 +1,7 @@
 from app.models.user import User, UserID, TelegramID, Role
 
 def map_user_row(row: dict) -> User:
-    """
-    Превращает словарь из БД в доменный объект User.
-    """
+
     return User(
         id=UserID(row["id"]),
         telegram_id=TelegramID(row["telegram_id"]),
