@@ -23,7 +23,7 @@ async def show_events_info(message: types.Message, builder):
     user_id = message.from_user.id
 
     fulltext = ""
-    with open("files/canteen/title.txt", "r", encoding="utf-8") as title_file:
+    with open("files/events/title.txt", "r", encoding="utf-8") as title_file:
         fulltext = [line for line in title_file]
 
     sent = await message.answer(
